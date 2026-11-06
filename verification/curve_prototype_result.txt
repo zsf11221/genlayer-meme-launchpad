@@ -1,0 +1,12 @@
+initial price: 37826 microGEN/token (scaled 1e6) = 0.037826 microGEN/token
+buy 1 GEN -> 25336206 tokens, fee 10000 microGEN (creator 3000, platform 7000), price 37826 -> 40363
+sell 12668103 tokens -> 498005 microGEN net (gross 503035, fee 5030: creator 1509, platform 3521), price 40363 -> 39064
+after extra buys: net_bought=12989217 microGEN, fees creator=42379 platform=98885
+graduation reached after 8 x 10 GEN buys: net_bought=92189217 microGEN (>= 85000000), sold=598369401 tokens, fill=7544 bp = 75.44%, price=627452
+total GEN spent on the graduation path: 93623456 microGEN (< claim 1000000000)
+1 microGEN buy at genesis -> 27 tokens (no dust failure mode)
+buy(0) correctly rejected
+sell(0) correctly rejected
+buy(-5) correctly rejected
+sell(-5) correctly rejected
+ALL CURVE PROTOTYPE ASSERTIONS PASSED
