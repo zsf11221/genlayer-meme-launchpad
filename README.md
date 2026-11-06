@@ -1,6 +1,6 @@
 # Meme Launchpad
 
-Website: https://zsf11221.github.io/genlayer-meme-launchpad/ (placeholder — the frontend is not deployed yet; this address will be confirmed once it is)
+Website: https://zsf11221.github.io/genlayer-meme-launchpad/ — live, deployed from `frontend/` to the `gh-pages` branch (GitHub Pages). Verification: [`evidence/frontend-verification.md`](evidence/frontend-verification.md).
 
 Meme token launcher on GenLayer Stable Studionet: bonding-curve trading with consensus-gated listing and graduation.
 
