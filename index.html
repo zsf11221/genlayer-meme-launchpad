@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="Meme Launchpad — bonding-curve meme trading with consensus-gated listings on GenLayer Stable Studionet." />
+  <title>Meme Launchpad — GenLayer Studionet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script type="module" crossorigin src="/genlayer-meme-launchpad/assets/index-BlYm1LBL.js"></script>
+  <link rel="stylesheet" crossorigin href="/genlayer-meme-launchpad/assets/index-DGLZLESa.css">
+</head>
+<body>
+  <a class="skip" href="#trade" data-i18n="a11y.skip">Skip to trading</a>
+
+  <header class="top">
+    <div class="top-in">
+      <a class="wordmark" href="#top">MEME<span>·</span>LAUNCHPAD</a>
+      <nav class="top-nav" aria-label="Sections">
+        <a href="#trade" data-i18n="nav.trade">Trade</a>
+        <a href="#story" data-i18n="nav.story">How it works</a>
+        <a href="#board" data-i18n="nav.board">Board</a>
+        <a href="#launch" data-i18n="nav.launch">Launch</a>
+        <a href="#activity" data-i18n="nav.activity">Activity</a>
+      </nav>
+      <div class="top-actions">
+        <div class="lang" role="group" aria-label="Language">
+          <button id="lang-en" type="button" lang="en">EN</button>
+          <button id="lang-zh" type="button" lang="zh" aria-pressed="true">中文</button>
+        </div>
+        <button id="wallet-btn" class="btn btn-ink" type="button" data-i18n="wallet.connect">Connect wallet</button>
+      </div>
+    </div>
+    <p id="signer-line" class="signer-line" aria-live="polite"></p>
+  </header>
+
+  <main id="top">
+    <!-- ============ 1 · THE CURVE IS THE TRADE ============ -->
+    <section id="trade" class="hero" aria-labelledby="hero-name">
+      <div class="hero-head">
+        <p class="kicker"><span id="hero-count">…</span> · <span data-i18n="hero.kicker">live on Stable Studionet</span></p>
+        <div class="hero-title-row">
+          <h1 id="hero-name">Pepe Garden</h1>
+          <span id="hero-status" class="chip chip-listed">LISTED</span>
+        </div>
+        <p id="hero-desc" class="hero-desc">A hand-drawn frog meme.</p>
+        <div class="hero-pickers" id="listing-pickers" role="group" aria-label="Choose a listing"></div>
+      </div>
+
+      <div class="hero-numbers" aria-live="polite">
+        <div class="num num-price">
+          <span class="num-label" data-i18n="hero.price">Price</span>
+          <span class="num-value"><span id="hero-price">—</span><small>GEN<span data-i18n="hero.perToken"> / token</span></small></span>
+        </div>
+        <div class="num">
+          <span class="num-label" data-i18n="hero.multiple">vs launch</span>
+          <span class="num-value" id="hero-mult">—</span>
+        </div>
+        <div class="num">
+          <span class="num-label" data-i18n="hero.fill">Curve filled</span>
+          <span class="num-value" id="hero-fill">—</span>
+        </div>
+      </div>
+
+      <div class="curve-board">
+        <div class="curve-wrap">
+          <div class="curve-head">
+            <h2 data-i18n="curve.title">The curve is the trade</h2>
+            <p data-i18n="curve.hint">Drag the dot along the curve to set your size — or type an amount below.</p>
+          </div>
+          <svg id="curve-svg" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Bonding curve chart">
+            <defs>
+              <linearGradient id="curve-fill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#1E6B43" stop-opacity="0.28" />
+                <stop offset="1" stop-color="#1E6B43" stop-opacity="0.02" />
+              </linearGradient>
+            </defs>
+            <g id="curve-grid"></g>
+            <path id="curve-area" fill="url(#curve-fill)" d="" />
+            <path id="curve-line" fill="none" stroke="#1E6B43" stroke-width="0.9" vector-effect="non-scaling-stroke" d="" />
+            <line id="curve-now-v" stroke="#16241C" stroke-width="0.5" stroke-dasharray="1.6 1.2" vector-effect="non-scaling-stroke" />
+            <line id="curve-now-h" stroke="#16241C" stroke-width="0.5" stroke-dasharray="1.6 1.2" vector-effect="non-scaling-stroke" />
+            <g id="curve-handle" tabindex="0" role="slider" aria-label="Trade size on the curve" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <circle id="curve-dot-halo" r="4.5" fill="#D2481B" opacity="0.18" />
+              <circle id="curve-dot" r="2.1" fill="#D2481B" stroke="#F4EEE0" stroke-width="0.7" />
+            </g>
+            <text id="curve-x-min" class="axis" x="1" y="98">0</text>
+            <text id="curve-x-max" class="axis" x="99" y="98" text-anchor="end">793M</text>
+            <text id="curve-y-max" class="axis" x="1" y="5">price ↑</text>
+          </svg>
+          <div class="curve-axis-note">
+            <span data-i18n="curve.xLabel">Tokens sold →</span>
+            <span id="curve-pos" class="curve-pos">—</span>
+          </div>
+        </div>
+
+        <form id="trade-form" class="trade-panel" autocomplete="off">
+          <div class="seg" role="group" aria-label="Buy or sell">
+            <button id="mode-buy" type="button" class="seg-btn active" data-i18n="trade.buy">Buy</button>
+            <button id="mode-sell" type="button" class="seg-btn" data-i18n="trade.sell">Sell</button>
+          </div>
+
+          <label class="field">
+            <span class="field-label" id="amount-label">Amount (GEN)</span>
+            <span class="field-row">
+              <input id="amount" name="amount" inputmode="decimal" placeholder="1" value="1" />
+              <span class="field-unit" id="amount-unit">GEN</span>
+            </span>
+          </label>
+
+          <div class="preview" aria-live="polite">
+            <p class="preview-line"><span data-i18n="trade.previewYouGet">You get about</span> <strong id="preview-out">—</strong></p>
+            <p class="preview-line"><span data-i18n="trade.previewFee">Fee (1%)</span> <strong id="preview-fee">—</strong></p>
+            <p class="preview-note" data-i18n="trade.previewNote">Preview only — calculated in your browser, not an on-chain result.</p>
+          </div>
+
+          <button id="trade-submit" class="btn btn-pine btn-big" type="submit" data-i18n="trade.submitBuy">Buy on-chain</button>
+          <p id="trade-error" class="form-error" role="alert" hidden></p>
+
+          <div class="balance-row">
+            <span id="balance-line">—</span>
+            <button id="claim-btn" class="btn btn-ghost" type="button" data-i18n="trade.claim">Claim 1,000 test GEN</button>
+          </div>
+
+          <ol id="tx-steps" class="tx-steps" hidden>
+            <li data-step="submit"><span class="dot"></span><span data-i18n="steps.submit">Submitted</span></li>
+            <li data-step="consensus"><span class="dot"></span><span data-i18n="steps.consensus">Consensus running</span></li>
+            <li data-step="final"><span class="dot"></span><span data-i18n="steps.final">Finalized</span></li>
+          </ol>
+          <p id="tx-status" class="tx-status" aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
+
+    <!-- ============ 2 · SCROLL NARRATIVE ============ -->
+    <section id="story" class="story" aria-labelledby="story-title">
+      <div class="story-rail" aria-hidden="true"><span id="story-progress"></span></div>
+      <h2 id="story-title" class="section-title" data-i18n="story.title">Three beats, one curve</h2>
+      <article class="beat" data-beat>
+        <p class="beat-no">01</p>
+        <h3 data-i18n="story.b1t">Launch — prove it is yours</h3>
+        <p data-i18n="story.b1">Anyone submits a meme with its origin story. GenLayer validators read the evidence independently and must agree before the listing goes live. No agreement, no listing — the listing stays pending and can be retried.</p>
+      </article>
+      <article class="beat" data-beat>
+        <p class="beat-no">02</p>
+        <h3 data-i18n="story.b2t">Climb — every trade moves the price</h3>
+        <p data-i18n="story.b2">A constant-product curve prices every token. Buy and the price climbs; sell and it falls. A 1% fee splits 0.3% to the creator and 0.7% to the platform pool. Nothing here is a guess — the price is the curve.</p>
+      </article>
+      <article class="beat" data-beat>
+        <p class="beat-no">03</p>
+        <h3 data-i18n="story.b3t">Graduate — 85 GEN of net buys</h3>
+        <p data-i18n="story.b3">When cumulative net buys reach 85 GEN, anyone can trigger graduation. The curve locks, the fill at that moment is recorded, and the listing graduates. Moon Cat already did — 74.81% filled.</p>
+      </article>
+    </section>
+
+    <!-- ============ 3 · BOARD ============ -->
+    <section id="board" class="board" aria-labelledby="board-title">
+      <div class="section-head">
+        <h2 id="board-title" class="section-title" data-i18n="board.title">Leaderboard</h2>
+        <button id="refresh-btn" class="btn btn-ghost" type="button" data-i18n="board.refresh">Refresh from chain</button>
+      </div>
+      <p class="source-line"><span data-i18n="board.source">Source: Stable Studionet contract</span> <a id="contract-link" href="https://explorer-studio.genlayer.com/address/0x4778537493b94faFBa86Ac3ae57075DEdaF4154B" target="_blank" rel="noopener">0x4778…154B</a> · <span id="updated-line">—</span></p>
+      <div class="table-scroll">
+        <table class="lb">
+          <thead>
+            <tr>
+              <th data-i18n="board.rank">#</th>
+              <th data-i18n="board.name">Meme</th>
+              <th data-i18n="board.status">Status</th>
+              <th data-i18n="board.price">Price</th>
+              <th data-i18n="board.fill">Fill</th>
+              <th data-i18n="board.netBuys">Net buys</th>
+            </tr>
+          </thead>
+          <tbody id="lb-body">
+            <tr><td colspan="6" class="empty" data-i18n="board.loading">Loading chain data…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <article id="detail" class="detail" aria-live="polite">
+        <h3 id="detail-name">—</h3>
+        <dl class="detail-grid">
+          <div><dt data-i18n="detail.creator">Creator</dt><dd id="detail-creator">—</dd></div>
+          <div><dt data-i18n="detail.review">Review</dt><dd id="detail-review">—</dd></div>
+          <div><dt data-i18n="detail.tokensSold">Tokens sold</dt><dd id="detail-sold">—</dd></div>
+          <div><dt data-i18n="detail.fees">Fees collected</dt><dd id="detail-fees">—</dd></div>
+          <div><dt data-i18n="detail.history">Review history</dt><dd id="detail-history">—</dd></div>
+          <div><dt data-i18n="detail.evidence">Evidence</dt><dd id="detail-evidence">—</dd></div>
+        </dl>
+        <div class="detail-actions">
+          <button id="review-btn" class="btn btn-ink" type="button" hidden data-i18n="detail.reviewBtn">Run consensus review</button>
+          <button id="graduate-btn" class="btn btn-gold" type="button" hidden data-i18n="detail.graduateBtn">Graduate this listing</button>
+        </div>
+      </article>
+    </section>
+
+    <!-- ============ 4 · LAUNCH ============ -->
+    <section id="launch" class="launch" aria-labelledby="launch-title">
+      <h2 id="launch-title" class="section-title" data-i18n="launch.title">Launch a meme</h2>
+      <p class="section-sub" data-i18n="launch.sub">Submit in English — listing values are stored on-chain in English. Your listing starts as pending review.</p>
+      <form id="launch-form" class="launch-form" autocomplete="off">
+        <label class="field"><span class="field-label" data-i18n="launch.name">Name</span>
+          <input name="name" required maxlength="80" placeholder="Pepe Garden" /></label>
+        <label class="field"><span class="field-label" data-i18n="launch.symbol">Symbol</span>
+          <input name="symbol" required maxlength="12" placeholder="PGDN" /></label>
+        <label class="field"><span class="field-label" data-i18n="launch.desc">Description</span>
+          <input name="description" required maxlength="200" placeholder="A hand-drawn frog meme." /></label>
+        <label class="field"><span class="field-label" data-i18n="launch.evidence">Evidence — origin, process, creator history (max 2000 characters)</span>
+          <textarea name="evidence" required maxlength="2000" rows="4" placeholder="I created this meme in March 2026…"></textarea></label>
+        <button class="btn btn-pine btn-big" type="submit" data-i18n="launch.submit">Submit listing on-chain</button>
+        <p id="launch-error" class="form-error" role="alert" hidden></p>
+      </form>
+    </section>
+
+    <!-- ============ 5 · ACTIVITY ============ -->
+    <section id="activity" class="activity" aria-labelledby="activity-title">
+      <h2 id="activity-title" class="section-title" data-i18n="activity.title">Activity</h2>
+      <p class="section-sub" data-i18n="activity.sub">Every transaction from this session, with its explorer link and final state.</p>
+      <ul id="tx-feed" class="tx-feed">
+        <li class="empty" data-i18n="activity.empty">No transactions yet in this session. Past transactions are in the evidence file linked below.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="foot-in">
+      <p><strong>Meme Launchpad</strong> — <span data-i18n="foot.what">bonding-curve meme trading with consensus-gated listings.</span></p>
+      <p><span data-i18n="foot.network">Network: Stable Studionet (Chain ID 61999)</span> · RPC <span class="mono">https://studio.genlayer.com/api</span></p>
+      <p><span data-i18n="foot.contract">Contract:</span> <a href="https://explorer-studio.genlayer.com/address/0x4778537493b94faFBa86Ac3ae57075DEdaF4154B" target="_blank" rel="noopener" class="mono">0x4778537493b94faFBa86Ac3ae57075DEdaF4154B</a></p>
+      <p><span data-i18n="foot.limits">GEN here is a nominal in-contract test ledger (1,000 GEN claimable per address). Prices come only from the constant-product curve — no external price feed. Graduation locks the curve; it does not migrate to an external exchange.</span></p>
+      <p><a href="https://github.com/zsf11221/genlayer-meme-launchpad" target="_blank" rel="noopener" data-i18n="foot.source">Source code</a> · <a href="https://github.com/zsf11221/genlayer-meme-launchpad/blob/main/evidence/live-verification.md" target="_blank" rel="noopener" data-i18n="foot.evidence">On-chain evidence</a></p>
+      <p class="foot-note" id="foot-updated">—</p>
+    </div>
+  </footer>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>
