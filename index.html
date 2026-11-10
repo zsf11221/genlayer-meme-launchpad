@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-  <script type="module" crossorigin src="/genlayer-meme-launchpad/assets/index-BlYm1LBL.js"></script>
+  <script type="module" crossorigin src="/genlayer-meme-launchpad/assets/index-CZo6rKP6.js"></script>
   <link rel="stylesheet" crossorigin href="/genlayer-meme-launchpad/assets/index-DGLZLESa.css">
 </head>
 <body>
@@ -160,7 +160,7 @@
         <h2 id="board-title" class="section-title" data-i18n="board.title">Leaderboard</h2>
         <button id="refresh-btn" class="btn btn-ghost" type="button" data-i18n="board.refresh">Refresh from chain</button>
       </div>
-      <p class="source-line"><span data-i18n="board.source">Source: Stable Studionet contract</span> <a id="contract-link" href="https://explorer-studio.genlayer.com/address/0x4778537493b94faFBa86Ac3ae57075DEdaF4154B" target="_blank" rel="noopener">0x4778…154B</a> · <span id="updated-line">—</span></p>
+      <p class="source-line"><span data-i18n="board.source">Source: Stable Studionet contract</span> <a id="contract-link" href="https://explorer-studio.genlayer.com/address/0x26Ad5661901355C952a2109c53eAe6A5BdBE93D8" target="_blank" rel="noopener">0x26Ad…BE93D8</a> · <span id="updated-line">—</span></p>
       <div class="table-scroll">
         <table class="lb">
           <thead>
@@ -188,6 +188,7 @@
           <div><dt data-i18n="detail.fees">Fees collected</dt><dd id="detail-fees">—</dd></div>
           <div><dt data-i18n="detail.history">Review history</dt><dd id="detail-history">—</dd></div>
           <div><dt data-i18n="detail.evidence">Evidence</dt><dd id="detail-evidence">—</dd></div>
+          <div><dt data-i18n="detail.evidenceSource">Evidence source</dt><dd id="detail-evidence-source">—</dd></div>
         </dl>
         <div class="detail-actions">
           <button id="review-btn" class="btn btn-ink" type="button" hidden data-i18n="detail.reviewBtn">Run consensus review</button>
@@ -209,6 +210,8 @@
           <input name="description" required maxlength="200" placeholder="A hand-drawn frog meme." /></label>
         <label class="field"><span class="field-label" data-i18n="launch.evidence">Evidence — origin, process, creator history (max 2000 characters)</span>
           <textarea name="evidence" required maxlength="2000" rows="4" placeholder="I created this meme in March 2026…"></textarea></label>
+        <label class="field"><span class="field-label" data-i18n="launch.evidenceSource">Evidence source — public https URL validators fetch themselves (max 500 characters)</span>
+          <input name="evidence_source" type="url" required maxlength="500" placeholder="https://example.com/pepe-garden-origin" /></label>
         <button class="btn btn-pine btn-big" type="submit" data-i18n="launch.submit">Submit listing on-chain</button>
         <p id="launch-error" class="form-error" role="alert" hidden></p>
       </form>
@@ -228,7 +231,7 @@
     <div class="foot-in">
       <p><strong>Meme Launchpad</strong> — <span data-i18n="foot.what">bonding-curve meme trading with consensus-gated listings.</span></p>
       <p><span data-i18n="foot.network">Network: Stable Studionet (Chain ID 61999)</span> · RPC <span class="mono">https://studio.genlayer.com/api</span></p>
-      <p><span data-i18n="foot.contract">Contract:</span> <a href="https://explorer-studio.genlayer.com/address/0x4778537493b94faFBa86Ac3ae57075DEdaF4154B" target="_blank" rel="noopener" class="mono">0x4778537493b94faFBa86Ac3ae57075DEdaF4154B</a></p>
+      <p><span data-i18n="foot.contract">Contract:</span> <a href="https://explorer-studio.genlayer.com/address/0x26Ad5661901355C952a2109c53eAe6A5BdBE93D8" target="_blank" rel="noopener" class="mono">0x26Ad5661901355C952a2109c53eAe6A5BdBE93D8</a></p>
       <p><span data-i18n="foot.limits">GEN here is a nominal in-contract test ledger (1,000 GEN claimable per address). Prices come only from the constant-product curve — no external price feed. Graduation locks the curve; it does not migrate to an external exchange.</span></p>
       <p><a href="https://github.com/zsf11221/genlayer-meme-launchpad" target="_blank" rel="noopener" data-i18n="foot.source">Source code</a> · <a href="https://github.com/zsf11221/genlayer-meme-launchpad/blob/main/evidence/live-verification.md" target="_blank" rel="noopener" data-i18n="foot.evidence">On-chain evidence</a></p>
       <p class="foot-note" id="foot-updated">—</p>
