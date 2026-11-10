@@ -46,10 +46,17 @@ GOOD_EVIDENCE_1 = (
 GOOD_EVIDENCE_2 = (
     "Moon Cat is my original cartoon cat meme, drawn by me in April 2026. "
     "I sketched the cat in a notebook on 3 April 2026, inked it on 5 April, "
-    "and publish the sketches on my blog mooncat.example. "
+    "and published the sketches on the project's origin page (see evidence source). "
     "This is the first and only token for this character."
 )
 THIN_EVIDENCE = "best meme coin moon 100x buy now"
+
+# Evidence sources validators fetch themselves at review time. The origin
+# pages corroborate listings 1 and 2; listing 3 points at the repo README,
+# which says nothing about Moon Coin's origin, so it cannot corroborate it.
+SOURCE_1 = "https://raw.githubusercontent.com/zsf11221/genlayer-meme-launchpad/main/evidence/origins/pepe-garden.md"
+SOURCE_2 = "https://raw.githubusercontent.com/zsf11221/genlayer-meme-launchpad/main/evidence/origins/moon-cat.md"
+SOURCE_3 = "https://raw.githubusercontent.com/zsf11221/genlayer-meme-launchpad/main/README.md"
 
 
 def log(msg: str) -> None:
@@ -173,7 +180,7 @@ def main() -> int:
         evidence["deploy_tx_hash"] = runner.steps[0]["tx_hash"]
 
         # Listing 1: the trading demo listing, stays LISTED.
-        runner.write("submit_listing", ["Pepe Garden", "PGDN", "A hand-drawn frog meme.", GOOD_EVIDENCE_1])
+        runner.write("submit_listing", ["Pepe Garden", "PGDN", "A hand-drawn frog meme.", GOOD_EVIDENCE_1, SOURCE_1])
         listing1 = runner.read("get_listing", ["1"])
         assert listing1["status"] == "PENDING_REVIEW", listing1
         step = runner.write("review_listing", ["1"], retries=REVIEW_RETRIES)
@@ -183,7 +190,7 @@ def main() -> int:
         assert verdict1["status"] == "LISTED", verdict1
 
         # Listing 2: the graduation test listing.
-        runner.write("submit_listing", ["Moon Cat", "MCAT", "An original cartoon cat meme.", GOOD_EVIDENCE_2])
+        runner.write("submit_listing", ["Moon Cat", "MCAT", "An original cartoon cat meme.", GOOD_EVIDENCE_2, SOURCE_2])
         step = runner.write("review_listing", ["2"], retries=REVIEW_RETRIES)
         verdict2 = runner.read("get_listing", ["2"])
         log(f"  listing 2 after review: {verdict2['status']} ({verdict2['review_reason']})")
@@ -191,7 +198,7 @@ def main() -> int:
         assert verdict2["status"] == "LISTED", verdict2
 
         # Listing 3: thin-evidence listing; the verdict is whatever consensus says.
-        runner.write("submit_listing", ["Moon Coin 100x", "MOON", "Best meme coin moon 100x.", THIN_EVIDENCE])
+        runner.write("submit_listing", ["Moon Coin 100x", "MOON", "Best meme coin moon 100x.", THIN_EVIDENCE, SOURCE_3])
         step = runner.write("review_listing", ["3"], retries=REVIEW_RETRIES)
         verdict3 = runner.read("get_listing", ["3"])
         log(f"  listing 3 after review: {verdict3['status']} ({verdict3['review_reason']})")

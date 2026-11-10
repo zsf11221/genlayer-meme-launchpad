@@ -20,6 +20,20 @@ GOOD_EVIDENCE = (
     "The art is mine, this is the first token for this meme, and no other project uses this name."
 )
 
+GOOD_SOURCE = "https://example.com/pepe-garden-origin"
+
+GOOD_FETCHED = (
+    "Pepe Garden origin note by @pepegarden: I drew the frog with ink on "
+    "paper in March 2026 and posted the drawing process in three videos on "
+    "X between 12 and 18 March 2026. This is the first token for this meme, "
+    "the art is mine."
+)
+
+CONTRADICTING_FETCHED = (
+    "This page is about a different frog meme by another artist, posted in "
+    "2024. It has nothing to do with @pepegarden or Pepe Garden."
+)
+
 SYBIL_EVIDENCE = "best meme coin moon 100x buy now"
 
 
@@ -28,12 +42,64 @@ def launchpad(direct_deploy):
     return direct_deploy(CONTRACT)
 
 
-def _submit(contract, evidence=GOOD_EVIDENCE, name="Pepe Garden"):
-    return contract.submit_listing(name, "PGDN", "A hand-drawn frog meme.", evidence)
+def _submit(contract, evidence=GOOD_EVIDENCE, name="Pepe Garden", source=GOOD_SOURCE):
+    return contract.submit_listing(name, "PGDN", "A hand-drawn frog meme.", evidence, source)
 
 
-def _approve_mock(direct_vm, verdict="APPROVED|ORIGINAL_WORK"):
+def _approve_mock(direct_vm, verdict="APPROVED|ORIGINAL_WORK", fetched=GOOD_FETCHED):
+    direct_vm.mock_web("example.com", {"status": 200, "body": fetched})
     direct_vm.mock_llm("meme token listing applications", verdict)
+
+
+def test_submit_listing_requires_https_source(direct_vm, launchpad):
+    with direct_vm.expect_revert("https URL"):
+        _submit(launchpad, source="http://example.com/pepe-garden-origin")
+    with direct_vm.expect_revert("must not be empty"):
+        _submit(launchpad, source="")
+    listing_id = _submit(launchpad)
+    assert launchpad.get_listing(listing_id)["evidence_source"] == GOOD_SOURCE
+
+
+def test_submit_evidence_only_creator(direct_vm, launchpad):
+    _submit(launchpad)
+    original_sender = direct_vm.sender
+    other = bytes.fromhex("bb" * 20)  # a different 20-byte address
+    try:
+        direct_vm.sender = other
+        with direct_vm.expect_revert("Only the listing creator"):
+            launchpad.submit_evidence("1", "Someone else rewrote the evidence.")
+    finally:
+        direct_vm.sender = original_sender
+    # The creator can still update pending evidence, including the source.
+    launchpad.submit_evidence("1", GOOD_EVIDENCE + " Updated.", GOOD_SOURCE)
+    listing = launchpad.get_listing("1")
+    assert listing["status"] == "PENDING_REVIEW"
+    assert listing["evidence"].endswith("Updated.")
+    assert "EVIDENCE_UPDATE" in listing["review_history"]
+
+
+def test_review_fails_when_source_unfetchable(direct_vm, launchpad):
+    _submit(launchpad)
+    direct_vm.mock_web("example.com", {"status": 404, "body": ""})
+    direct_vm.mock_llm("meme token listing applications", "APPROVED|ORIGINAL_WORK")
+    with direct_vm.expect_revert("could not be fetched"):
+        launchpad.review_listing("1")
+    assert launchpad.get_listing("1")["status"] == "PENDING_REVIEW"
+
+
+def test_review_uses_fetched_source_evidence(direct_vm, launchpad):
+    # The verdict is judged on content the validators fetched themselves
+    # from the source URL, not on the creator's pasted claim alone: if a
+    # validator fetches different (contradicting) content, it disagrees.
+    _submit(launchpad)
+    _approve_mock(direct_vm)
+    verdict = launchpad.review_listing("1")
+    assert verdict == "APPROVED|ORIGINAL_WORK"
+    assert direct_vm.run_validator() is True
+    # Swap the fetched source so the validator sees contradicting content.
+    direct_vm.clear_mocks()
+    _approve_mock(direct_vm, "REJECTED|UNCLEAR_ORIGIN", fetched=CONTRADICTING_FETCHED)
+    assert direct_vm.run_validator() is False
 
 
 def test_submit_creates_pending_listing(direct_vm, launchpad):
@@ -76,6 +142,22 @@ def test_review_rejects_and_cannot_be_overwritten(direct_vm, launchpad):
     listing = launchpad.get_listing("1")
     assert listing["status"] == "REJECTED"
     assert "CONTEST|I swear this one is real" in listing["review_history"]
+    assert listing["witness_count"] == "1"
+
+
+def test_post_decision_witnesses_are_bounded(direct_vm, launchpad):
+    _submit(launchpad, evidence=SYBIL_EVIDENCE)
+    _approve_mock(direct_vm, "REJECTED|SYBIL_PATTERN")
+    launchpad.review_listing("1")
+    assert launchpad.get_listing("1")["status"] == "REJECTED"
+    for n in range(5):
+        launchpad.submit_evidence("1", "Witness statement %d." % n)
+    listing = launchpad.get_listing("1")
+    assert listing["witness_count"] == "5"
+    assert listing["status"] == "REJECTED"
+    with direct_vm.expect_revert("witness limit"):
+        launchpad.submit_evidence("1", "One witness too many.")
+    assert launchpad.get_listing("1")["witness_count"] == "5"
 
 
 def test_review_empty_evidence_fails_before_write(direct_vm, launchpad):

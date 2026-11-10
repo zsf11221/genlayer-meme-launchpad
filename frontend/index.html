@@ -187,6 +187,7 @@
           <div><dt data-i18n="detail.fees">Fees collected</dt><dd id="detail-fees">—</dd></div>
           <div><dt data-i18n="detail.history">Review history</dt><dd id="detail-history">—</dd></div>
           <div><dt data-i18n="detail.evidence">Evidence</dt><dd id="detail-evidence">—</dd></div>
+          <div><dt data-i18n="detail.evidenceSource">Evidence source</dt><dd id="detail-evidence-source">—</dd></div>
         </dl>
         <div class="detail-actions">
           <button id="review-btn" class="btn btn-ink" type="button" hidden data-i18n="detail.reviewBtn">Run consensus review</button>
@@ -208,6 +209,8 @@
           <input name="description" required maxlength="200" placeholder="A hand-drawn frog meme." /></label>
         <label class="field"><span class="field-label" data-i18n="launch.evidence">Evidence — origin, process, creator history (max 2000 characters)</span>
           <textarea name="evidence" required maxlength="2000" rows="4" placeholder="I created this meme in March 2026…"></textarea></label>
+        <label class="field"><span class="field-label" data-i18n="launch.evidenceSource">Evidence source — public https URL validators fetch themselves (max 500 characters)</span>
+          <input name="evidence_source" type="url" required maxlength="500" placeholder="https://example.com/pepe-garden-origin" /></label>
         <button class="btn btn-pine btn-big" type="submit" data-i18n="launch.submit">Submit listing on-chain</button>
         <p id="launch-error" class="form-error" role="alert" hidden></p>
       </form>

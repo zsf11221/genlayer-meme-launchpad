@@ -10,10 +10,13 @@
 - **Graduation is an internal state change.** When a listing graduates,
   its status becomes `GRADUATED` and the curve locks. Tokens are not
   migrated to any external DEX and no liquidity pool is created.
-- **Review judges self-statements.** The consensus review judges the
-  creator's own evidence text (origin, sources, creator history). It is
-  a judgment on the statement's specificity and consistency, not an
-  independent check of real-world identity.
+- **Review judges validator-fetched source evidence.** At review time the
+  leader and each validator independently fetch the listing's
+  `evidence_source` URL and judge the fetched content together with the
+  creator's statement. A source that cannot be fetched blocks the review.
+  The source URL itself is creator-supplied, so this authenticates that
+  the reviewed content came from the stated public source — it is not an
+  independent check of real-world identity beyond that source.
 - **Deterministic curve pricing.** Prices come only from the constant
   product curve. There is no external price feed.
 - **First live review attempt.** The first deployment's first

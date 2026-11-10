@@ -233,6 +233,18 @@ function renderDetail() {
     : t('detail.noFees');
   $('detail-history').textContent = (l.review_history || '').replaceAll('\n', ' → ') || '—';
   $('detail-evidence').textContent = l.evidence || '—';
+  const srcEl = $('detail-evidence-source');
+  srcEl.innerHTML = '';
+  if (l.evidence_source) {
+    const a = document.createElement('a');
+    a.href = l.evidence_source;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.textContent = l.evidence_source;
+    srcEl.appendChild(a);
+  } else {
+    srcEl.textContent = '—';
+  }
   $('review-btn').hidden = l.status !== 'PENDING_REVIEW';
   $('graduate-btn').hidden = l.status !== 'LISTED';
 }
@@ -777,11 +789,15 @@ async function onLaunch(e) {
   const symbol = String(fd.get('symbol') || '').trim();
   const description = String(fd.get('description') || '').trim();
   const evidence = String(fd.get('evidence') || '').trim();
-  if (!name || !symbol || !description || !evidence) {
+  const evidenceSource = String(fd.get('evidence_source') || '').trim();
+  if (!name || !symbol || !description || !evidence || !evidenceSource) {
     errEl.hidden = false; errEl.textContent = t('launch.empty'); return;
   }
   if (evidence.length > 2000) {
     errEl.hidden = false; errEl.textContent = t('launch.evidenceLong'); return;
+  }
+  if (!evidenceSource.startsWith('https://') || evidenceSource.length > 500) {
+    errEl.hidden = false; errEl.textContent = t('launch.evidenceSourceBad'); return;
   }
   const btn = e.target.querySelector('button[type="submit"]');
   btn.disabled = true;
@@ -789,7 +805,7 @@ async function onLaunch(e) {
     const beforeIds = new Set(state.listings.map((l) => String(l.id)));
     await runWrite({
       method: 'submit_listing',
-      args: [name, symbol, description, evidence],
+      args: [name, symbol, description, evidence, evidenceSource],
       successNote: '',
       readBack: async () => {
         const raw = asObject(await readView('list_listings', []));

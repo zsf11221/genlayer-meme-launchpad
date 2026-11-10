@@ -23,12 +23,13 @@ Meme token launcher on GenLayer Stable Studionet: bonding-curve trading with con
 
 ### Listing and consensus review
 
-Anyone can submit a meme with `submit_listing(name, symbol, description, evidence)`. The listing starts as `PENDING_REVIEW`. `review_listing(listing_id)` asks GenLayer validators to judge the creator's evidence (origin, sources, creator history, in the creator's own words):
+Anyone can submit a meme with `submit_listing(name, symbol, description, evidence, evidence_source)`. The listing starts as `PENDING_REVIEW`. `evidence_source` must be a public `https` URL: at review time the leader fetches that URL itself and each validator independently re-fetches it, and the verdict is judged on the fetched source content together with the creator's statement. If the source cannot be fetched (non-200 or empty), the review fails before any write. `review_listing(listing_id)` asks GenLayer validators to judge originality, creator identity and sybil signals on that authenticated source evidence:
 
 - The leader asks an LLM for exactly one line, `APPROVED|<CODE>` or `REJECTED|<CODE>`, with a fixed set of reason codes (`ORIGINAL_WORK`, `CREDIBLE_CREATOR`, `IMITATION`, `THIN_EVIDENCE`, `SYBIL_PATTERN`, `UNCLEAR_ORIGIN`).
-- Each validator independently re-runs the same prompt on the same evidence. Consensus requires strict equality on the **decision** token (`APPROVED` vs `REJECTED`) — that token is what changes state. The reason code is leader-provided metadata and may differ between models.
+- Each validator independently re-runs the same prompt on the same evidence, re-fetching the source URL itself. Consensus requires strict equality on the **decision** token (`APPROVED` vs `REJECTED`) — that token is what changes state. The reason code is leader-provided metadata and may differ between models.
 - If consensus fails, nothing is written and the listing stays `PENDING_REVIEW`, retryable.
-- A decided listing can never be re-reviewed. New evidence submitted afterwards is kept as a witness entry in `review_history`; the standing verdict is untouched.
+- Only the listing creator may modify pending evidence (`submit_evidence` while `PENDING_REVIEW` fails for anyone else).
+- A decided listing can never be re-reviewed. New evidence submitted afterwards is kept as a witness entry in `review_history`; the standing verdict is untouched. Post-decision witness entries are bounded to 5 per listing.
 
 ### Bonding curve
 
@@ -48,8 +49,8 @@ GEN balances are a nominal in-contract TEST ledger. `claim_test_gen()` credits 1
 
 | Method | Type | Description |
 |---|---|---|
-| `submit_listing(name, symbol, description, evidence)` | write | Create a listing, returns its id |
-| `submit_evidence(listing_id, evidence)` | write | Replace evidence while pending; witness entry after a decision |
+| `submit_listing(name, symbol, description, evidence, evidence_source)` | write | Create a listing, returns its id |
+| `submit_evidence(listing_id, evidence, evidence_source="")` | write | Creator-only evidence update while pending; witness entry (max 5) after a decision |
 | `review_listing(listing_id)` | write | Consensus review, returns the verdict string |
 | `claim_test_gen()` | write | Claim the one-time 1,000 GEN test credit |
 | `buy(listing_id, amount_gen_micro)` | write | Buy tokens along the curve, returns tokens received |

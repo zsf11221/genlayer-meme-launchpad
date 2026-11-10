@@ -33,6 +33,17 @@ Money design (all integers, no floats anywhere):
   entries. No real GEN is transferred by this contract.
 
 Consensus (review_listing):
+- Evidence is authenticated, not just asserted. Every listing carries an
+  evidence_source: a public https URL the creator supplies at submission.
+  At review time the leader fetches that URL itself
+  (gl.nondet.web.get) and judges the fetched content; each validator
+  independently re-fetches the same URL and re-derives its verdict from
+  what it fetched. If the source cannot be fetched (non-200, empty) the
+  review fails before any write, so unauthenticated evidence can never
+  produce a decision. The prompt judges originality, creator identity
+  and sybil signals ONLY on the fetched source content together with the
+  creator statement: approve only when the fetched source corroborates
+  the creator and the first-token claim.
 - The leader asks an LLM to judge the listing evidence and return exactly
   one line: "APPROVED|<CODE>" or "REJECTED|<CODE>", where <CODE> is one of
   a fixed set of reason codes. The validator independently re-runs the
@@ -46,18 +57,17 @@ Consensus (review_listing):
   consensus fail spuriously: on Studionet the first review ended in
   validator disagreement after all rotations even though the verdict
   itself was the contested point, not the wording.
-- Any failure (empty evidence, unparsable verdict, consensus
-  disagreement) raises before any write, so the listing stays
+- Any failure (empty evidence, unfetchable source, unparsable verdict,
+  consensus disagreement) raises before any write, so the listing stays
   PENDING_REVIEW and can be retried.
 - An already decided listing can never be re-reviewed. New evidence
   submitted afterwards is kept as a witness entry in review_history
-  while the standing verdict stays untouched.
-- The evidence is a creator self-statement by design. The prompt judges
-  it on specificity and internal consistency and does NOT demand external
-  URLs or independent verification; a concrete statement (dates, process,
-  identity, first-token claim) with no impersonation or sybil signal is
-  enough to approve. THIN_EVIDENCE is reserved for empty, generic or
-  hype-only text with no creator information at all.
+  while the standing verdict stays untouched. Post-decision witness
+  entries are bounded: at most MAX_WITNESSES entries per listing, and
+  further witness submissions fail.
+- Only the listing creator may modify pending evidence: submit_evidence
+  while PENDING_REVIEW replaces the evidence (and, if given, the source
+  URL) only when called by the creator; anyone else's call fails.
 """
 
 from dataclasses import dataclass
@@ -84,6 +94,9 @@ GRADUATION_NET_BOUGHT = 85_000_000  # 85 GEN of net buys
 CLAIM_AMOUNT = 1_000 * MICRO_PER_GEN  # 1000 GEN test credit, once per address
 
 MAX_EVIDENCE_LEN = 2000
+MAX_EVIDENCE_SOURCE_LEN = 500
+MAX_WITNESSES = 5  # post-decision witness entries allowed per listing
+FETCHED_EVIDENCE_MAX_CHARS = 4000
 
 STATUS_PENDING = "PENDING_REVIEW"
 STATUS_LISTED = "LISTED"
@@ -102,6 +115,8 @@ class Listing:
     symbol: str
     description: str
     evidence: str
+    evidence_source: str
+    witness_count: str
     creator: str
     status: str
     review_reason: str
@@ -170,7 +185,41 @@ def _verdict_decision(verdict: str) -> str:
     return verdict.split("|")[0]
 
 
-def _review_prompt(name: str, symbol: str, description: str, evidence: str) -> str:
+def _validate_evidence_source(url: str) -> None:
+    """An evidence source must be a public https URL (authenticated
+    evidence: validators fetch it themselves at review time)."""
+    if not isinstance(url, str) or url.strip() == "":
+        raise gl.vm.UserError("[EXPECTED] evidence_source must not be empty")
+    if len(url) > MAX_EVIDENCE_SOURCE_LEN:
+        raise gl.vm.UserError("[EXPECTED] evidence_source exceeds 500 characters")
+    if not url.startswith("https://"):
+        raise gl.vm.UserError("[EXPECTED] evidence_source must be an https URL")
+
+
+def _fetch_source_text(url: str) -> str:
+    """Fetch the evidence source. Called inside nondet leader/validator
+    functions, so every validator fetches the URL independently instead
+    of trusting the submitted text. Any fetch failure raises before any
+    write, so unauthenticated evidence can never produce a decision."""
+    resp = gl.nondet.web.get(url)
+    if resp.status != 200:
+        raise gl.vm.UserError(
+            "[EXPECTED] Evidence source could not be fetched: HTTP "
+            + str(resp.status)
+        )
+    body = resp.body
+    if body is None:
+        raise gl.vm.UserError("[EXPECTED] Evidence source returned empty content")
+    if isinstance(body, bytes):
+        text = body.decode("utf-8", "ignore")
+    else:
+        text = str(body)
+    if text.strip() == "":
+        raise gl.vm.UserError("[EXPECTED] Evidence source returned empty content")
+    return text[:FETCHED_EVIDENCE_MAX_CHARS]
+
+
+def _review_prompt(name: str, symbol: str, description: str, evidence: str, evidence_source: str, fetched_text: str) -> str:
     return (
         "You review meme token listing applications for a launchpad. "
         "Judge ONLY the evidence below; do not use outside knowledge.\n"
@@ -179,22 +228,30 @@ def _review_prompt(name: str, symbol: str, description: str, evidence: str) -> s
         "Description: " + description + "\n"
         "Creator evidence (origin, sources, creator history, in the creator's own words):\n"
         + evidence + "\n"
-        "How to judge. The evidence is a creator self-statement by design: "
-        "do NOT require external URLs, links or independent verification.\n"
-        "1. APPROVE when the statement is specific and internally consistent: "
-        "it names the creator, gives dates or a creation process, and claims "
-        "this is the first token for this meme. A detailed self-statement with "
-        "no impersonation or sybil signal is enough.\n"
+        "Authenticated source evidence. The URL below was fetched by the "
+        "reviewer itself from the creator-supplied source, it is NOT the "
+        "creator's pasted claim:\n"
+        "Source URL: " + evidence_source + "\n"
+        "Fetched source content:\n" + fetched_text + "\n"
+        "How to judge. Originality, creator identity and sybil signals are "
+        "judged on the FETCHED source content together with the creator "
+        "statement. The fetched source must corroborate the statement.\n"
+        "1. APPROVE only when the fetched source corroborates the statement: "
+        "it names the creator (or their public account), shows the creation "
+        "process or dates, and supports that this is the first token for "
+        "this meme, with no impersonation or sybil signal.\n"
         "2. REJECT if it imitates a well-known project, coin or brand (IMITATION).\n"
-        "3. REJECT only if the evidence is empty, generic or hype-only with no "
-        "creator information at all, for example a few hype words and nothing "
-        "else (THIN_EVIDENCE). A specific statement is never thin evidence.\n"
+        "3. REJECT if the fetched source does not support the creator or "
+        "origin claim at all, for example it is unrelated, empty of creator "
+        "information, or contradicts the statement (UNCLEAR_ORIGIN). "
+        "REJECT only if the statement itself is also empty, generic or "
+        "hype-only with no creator information at all (THIN_EVIDENCE).\n"
         "4. REJECT if it reads like bulk sybil issuance: copy-paste text, no creator "
-        "history, no origin story (SYBIL_PATTERN).\n"
+        "history, no origin story in either the statement or the fetched source (SYBIL_PATTERN).\n"
         "5. REJECT if origin is unclear and cannot be told apart from a copy "
         "(UNCLEAR_ORIGIN).\n"
-        "When a specific, detailed statement shows no impersonation signal, "
-        "choose APPROVED rather than REJECTED.\n"
+        "When the fetched source corroborates a specific, detailed statement "
+        "with no impersonation signal, choose APPROVED rather than REJECTED.\n"
         "Reply with EXACTLY ONE LINE and nothing else, no markdown, no extra words:\n"
         "APPROVED|ORIGINAL_WORK or APPROVED|CREDIBLE_CREATOR or "
         "REJECTED|IMITATION or REJECTED|THIN_EVIDENCE or REJECTED|SYBIL_PATTERN or REJECTED|UNCLEAR_ORIGIN"
@@ -237,6 +294,8 @@ class MemeLaunchpad(gl.Contract):
             "symbol": listing.symbol,
             "description": listing.description,
             "evidence": listing.evidence,
+            "evidence_source": listing.evidence_source,
+            "witness_count": listing.witness_count,
             "creator": listing.creator,
             "status": listing.status,
             "review_reason": listing.review_reason,
@@ -252,13 +311,14 @@ class MemeLaunchpad(gl.Contract):
 
     # ------------------------------------------------------------ listing
     @gl.public.write
-    def submit_listing(self, name: str, symbol: str, description: str, evidence: str) -> str:
+    def submit_listing(self, name: str, symbol: str, description: str, evidence: str, evidence_source: str) -> str:
         if name.strip() == "" or symbol.strip() == "":
             raise gl.vm.UserError("[EXPECTED] name and symbol must not be empty")
         if description.strip() == "":
             raise gl.vm.UserError("[EXPECTED] description must not be empty")
         if len(evidence) > MAX_EVIDENCE_LEN:
             raise gl.vm.UserError("[EXPECTED] evidence exceeds 2000 characters")
+        _validate_evidence_source(evidence_source)
         listing_id = self.next_listing_id
         self.next_listing_id = str(int(listing_id) + 1)
         listing = Listing(
@@ -267,6 +327,8 @@ class MemeLaunchpad(gl.Contract):
             symbol=symbol,
             description=description,
             evidence=evidence,
+            evidence_source=evidence_source,
+            witness_count="0",
             creator=gl.message.sender_address.as_hex,
             status=STATUS_PENDING,
             review_reason="",
@@ -283,17 +345,30 @@ class MemeLaunchpad(gl.Contract):
         return listing_id
 
     @gl.public.write
-    def submit_evidence(self, listing_id: str, evidence: str) -> str:
+    def submit_evidence(self, listing_id: str, evidence: str, evidence_source: str = "") -> str:
         """Attach new evidence. While PENDING_REVIEW it replaces the evidence
-        under review; after a decision it is kept as a witness entry and the
-        standing verdict is never changed."""
+        (and, if given, the source URL) under review, but only when called
+        by the listing creator; anyone else's update fails. After a
+        decision it is kept as a witness entry and the standing verdict is
+        never changed; witness entries are bounded to MAX_WITNESSES per
+        listing, further ones fail."""
         if len(evidence) > MAX_EVIDENCE_LEN:
             raise gl.vm.UserError("[EXPECTED] evidence exceeds 2000 characters")
+        if evidence_source != "":
+            _validate_evidence_source(evidence_source)
         listing = self._get_listing(listing_id)
         if listing.status == STATUS_PENDING:
+            if gl.message.sender_address.as_hex.lower() != listing.creator.lower():
+                raise gl.vm.UserError("[EXPECTED] Only the listing creator can modify pending evidence")
             listing.evidence = evidence
+            if evidence_source != "":
+                listing.evidence_source = evidence_source
             listing.review_history = listing.review_history + "\nEVIDENCE_UPDATE"
         else:
+            witnesses = _parse_int(listing.witness_count, "witness_count")
+            if witnesses >= MAX_WITNESSES:
+                raise gl.vm.UserError("[EXPECTED] Post-decision witness limit reached")
+            listing.witness_count = str(witnesses + 1)
             listing.review_history = (
                 listing.review_history + "\nCONTEST|" + evidence
             )
@@ -307,11 +382,17 @@ class MemeLaunchpad(gl.Contract):
             raise gl.vm.UserError("[EXPECTED] Listing already reviewed: " + listing.status)
         if listing.evidence.strip() == "":
             raise gl.vm.UserError("[EXPECTED] Evidence is empty, cannot review")
-        prompt = _review_prompt(
-            listing.name, listing.symbol, listing.description, listing.evidence
-        )
 
         def leader_fn():
+            # The source URL is fetched here, inside the nondet call, so
+            # every validator fetches it independently too (validator_fn
+            # re-runs leader_fn). The verdict is judged on the fetched
+            # content, not on the creator's pasted claim alone.
+            fetched = _fetch_source_text(listing.evidence_source)
+            prompt = _review_prompt(
+                listing.name, listing.symbol, listing.description,
+                listing.evidence, listing.evidence_source, fetched,
+            )
             raw = gl.nondet.exec_prompt(prompt)
             return _parse_verdict(raw)
 
