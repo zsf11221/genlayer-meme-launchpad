@@ -4,7 +4,7 @@ import { TransactionStatus, TransactionHashVariant } from 'genlayer-js/types';
 import { I18N } from './i18n.js';
 
 // ---------- constants (verified on-chain, see evidence/live-verification.md) ----------
-const CONTRACT = '0x4778537493b94faFBa86Ac3ae57075DEdaF4154B';
+const CONTRACT = '0x26Ad5661901355C952a2109c53eAe6A5BdBE93D8';
 const EXPLORER = 'https://explorer-studio.genlayer.com';
 const CHAIN_ID = 61999;
 const CHAIN_ID_HEX = '0xf223';
